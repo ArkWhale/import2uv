@@ -13,13 +13,16 @@ plan. The full implementation is tracked in these workspace issues:
 - `LEO-16`: draft generator
 - `LEO-17`: packaging, tests, and release
 
-The current bootstrap includes:
+The current implementation includes:
 
 - package layout under `src/import2uv/`
 - a working CLI entrypoint
-- a basic AST scanner
-- built-in mapping support
+- AST-based scanning with stdlib and local-module filtering
+- built-in import-to-package mapping with 100+ common mismatches
+- custom mapping overrides via `--mapping`
+- fallback package generation with explicit unknown-import reporting
 - output rendering for `uv`, `requirements.txt`, and `pyproject` styles
+- `--json` output for automation
 
 ## Usage
 
@@ -32,6 +35,12 @@ Optional mapping override:
 
 ```bash
 import2uv scan ./my_project --mapping custom-mapping.json
+```
+
+Machine-readable output:
+
+```bash
+import2uv scan ./my_project --json
 ```
 
 ## Repository Layout
@@ -51,6 +60,5 @@ tests/
 Near-term work from the Multica workspace:
 
 1. Finish local-package detection and import extraction edge cases.
-2. Expand the public import-to-package mapping table.
-3. Improve unknown import reporting and draft output quality.
-4. Add release automation and PyPI packaging.
+2. Improve draft output quality and formatting ergonomics.
+3. Add release automation and PyPI packaging.

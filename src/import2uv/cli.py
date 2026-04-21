@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import typer
@@ -11,9 +12,14 @@ from import2uv.scanner import scan_repository
 app = typer.Typer(no_args_is_help=True)
 
 
+@app.callback()
+def main() -> None:
+    """import2uv command group."""
+
+
 @app.command()
 def scan(
-    path: Path = typer.Argument(..., exists=True, file_okay=False, resolve_path=True),
+    path: Path = typer.Argument(..., exists=True, resolve_path=True),
     mapping: Path | None = typer.Option(
         None,
         "--mapping",
@@ -24,6 +30,11 @@ def scan(
         "--format",
         help="Output format: uv, requirements, or pyproject.",
     ),
+    json_output: bool = typer.Option(
+        False,
+        "--json",
+        help="Emit machine-readable JSON instead of the human-oriented report.",
+    ),
 ) -> None:
     summary = scan_repository(path)
     resolution = resolve_imports(summary.third_party_imports, mapping_path=mapping)
@@ -32,6 +43,32 @@ def scan(
         resolution.unknown_imports,
         output_format=format,  # typer validates at runtime via documentation
     )
+
+    if json_output:
+        typer.echo(
+            json.dumps(
+                {
+                    "root": str(summary.root),
+                    "files_scanned": summary.files_scanned,
+                    "third_party_imports": summary.third_party_imports,
+                    "local_modules": summary.local_modules,
+                    "resolved_imports": [
+                        {
+                            "import_name": item.import_name,
+                            "package_name": item.package_name,
+                            "source": item.source,
+                        }
+                        for item in resolution.resolved_imports
+                    ],
+                    "packages": resolution.packages,
+                    "unknown_imports": resolution.unknown_imports,
+                    "rendered_output": rendered,
+                },
+                indent=2,
+                sort_keys=True,
+            )
+        )
+        return
 
     typer.echo(
         f"Scanned {summary.files_scanned} Python files under {summary.root}.\n"

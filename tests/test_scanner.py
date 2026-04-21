@@ -19,3 +19,22 @@ def test_scan_repository_filters_stdlib_and_local_modules(tmp_path: Path) -> Non
     assert summary.files_scanned == 2
     assert summary.third_party_imports == ["requests"]
     assert "app" in summary.local_modules
+
+
+def test_scan_repository_skips_syntax_errors(tmp_path: Path) -> None:
+    (tmp_path / "bad.py").write_text("def broken(\n", encoding="utf-8")
+
+    summary = scan_repository(tmp_path)
+
+    assert summary.files_scanned == 1
+    assert summary.third_party_imports == []
+
+
+def test_scan_repository_supports_single_file_input(tmp_path: Path) -> None:
+    target = tmp_path / "app.py"
+    target.write_text("import requests\nimport os\n", encoding="utf-8")
+
+    summary = scan_repository(target)
+
+    assert summary.files_scanned == 1
+    assert summary.third_party_imports == ["requests"]

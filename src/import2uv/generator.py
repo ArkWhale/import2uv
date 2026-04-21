@@ -21,5 +21,6 @@ def render_output(
     if not unknown_imports:
         return body
 
-    unknown = ", ".join(unknown_imports)
-    return f"{body}\n\n# Unknown imports: {unknown}"
+    lines = [body, "", "# Unknown imports (using fallback package names):"]
+    lines.extend(f"#   {name}" for name in unknown_imports)
+    return "\n".join(lines)

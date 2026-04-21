@@ -47,7 +47,11 @@ def discover_local_modules(root: Path) -> set[str]:
 
 
 def extract_import_names(source: str) -> set[str]:
-    tree = ast.parse(source)
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return set()
+
     names: set[str] = set()
 
     for node in ast.walk(tree):
@@ -60,15 +64,24 @@ def extract_import_names(source: str) -> set[str]:
     return names
 
 
-def scan_repository(root: Path) -> ScanSummary:
-    root = root.resolve()
+def scan_repository(path: Path) -> ScanSummary:
+    path = path.resolve()
+    root = path if path.is_dir() else path.parent
     local_modules = discover_local_modules(root)
     third_party_imports: set[str] = set()
 
-    python_files = iter_python_files(root)
+    python_files = iter_python_files(root) if path.is_dir() else [path]
     for path in python_files:
-        extracted = extract_import_names(path.read_text(encoding="utf-8"))
+        try:
+            extracted = extract_import_names(
+                path.read_text(encoding="utf-8", errors="replace")
+            )
+        except OSError:
+            continue
+
         for name in extracted:
+            if name == "__future__":
+                continue
             if name in DEFAULT_STDLIB_MODULES:
                 continue
             if name in local_modules:
