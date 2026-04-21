@@ -7,6 +7,7 @@ OutputFormat = Literal["uv", "requirements", "pyproject"]
 
 def render_output(
     packages: list[str],
+    fallback_imports: list[str],
     unknown_imports: list[str],
     output_format: OutputFormat = "uv",
 ) -> str:
@@ -18,8 +19,12 @@ def render_output(
     else:
         body = "uv add " + " ".join(packages) if packages else "uv add"
 
-    if not unknown_imports:
-        return body
+    notes: list[str] = []
+    if fallback_imports:
+        notes.append("# Fallback imports (verify package names): " + ", ".join(fallback_imports))
+    if unknown_imports:
+        notes.append("# Unknown imports: " + ", ".join(unknown_imports))
 
-    unknown = ", ".join(unknown_imports)
-    return f"{body}\n\n# Unknown imports: {unknown}"
+    if not notes:
+        return body
+    return f"{body}\n\n" + "\n".join(notes)
