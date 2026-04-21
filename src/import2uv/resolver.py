@@ -30,12 +30,13 @@ def resolve_imports(
 
     packages: set[str] = set()
     unknown_imports: list[str] = []
-    for name in imports:
+
+    for name in sorted(imports):
         package = mapping.get(name)
-        if package:
-            packages.add(package)
-        else:
+        if package is None:
             unknown_imports.append(name)
+            continue
+        packages.add(package)
 
     return Resolution(
         packages=sorted(packages),

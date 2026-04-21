@@ -10,16 +10,29 @@ def render_output(
     unknown_imports: list[str],
     output_format: OutputFormat = "uv",
 ) -> str:
+    unique_packages = sorted(set(packages))
+
     if output_format == "requirements":
-        body = "\n".join(packages) if packages else "# No resolved packages"
+        body = (
+            "\n".join(unique_packages)
+            if unique_packages
+            else "# No third-party packages detected."
+        )
     elif output_format == "pyproject":
-        lines = [f'    "{package}",' for package in packages]
-        body = "[project]\ndependencies = [\n" + "\n".join(lines) + "\n]"
+        lines = [f'    "{package}",' for package in unique_packages]
+        body = "\n".join(["dependencies = [", *lines, "]"])
+    elif output_format == "uv":
+        body = (
+            f"uv add {' '.join(unique_packages)}"
+            if unique_packages
+            else "# No third-party packages detected."
+        )
     else:
-        body = "uv add " + " ".join(packages) if packages else "uv add"
+        raise ValueError(f"Unknown format: {output_format}")
 
     if not unknown_imports:
         return body
 
-    unknown = ", ".join(unknown_imports)
-    return f"{body}\n\n# Unknown imports: {unknown}"
+    unknown_lines = ["", "# Unknown imports (resolve manually):"]
+    unknown_lines.extend(f"#   {name}" for name in sorted(unknown_imports))
+    return "\n".join([body, *unknown_lines])
